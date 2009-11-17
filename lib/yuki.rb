@@ -180,12 +180,6 @@ module Yuki
         define_method(attr) { self[attr] || default_val }
         define_method(:"#{attr}=") { |v| self[attr] = v } if mutable 
         define_method(:"#{attr}?") { self[attr] }
-        
-        # todo define methods
-        # def foo?
-        #   self[:foo]
-        # end
-        #
       end
       
       private 
