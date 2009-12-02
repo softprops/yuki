@@ -81,6 +81,28 @@ class YukiTest < Test::Unit::TestCase
     end
   end
   
+  context "a module's type" do 
+    module Moo
+      class Bar
+        include Yuki
+      end
+    end
+      
+    should "be resolved given a hash with type attr" do
+      assert_equal Moo::Bar.resolve(
+        {
+          :class_id => {
+            :type => :"YukiTest::Moo::Bar" 
+          }
+        }
+      ), Moo::Bar
+    end
+    
+    should "be resolved given a string representation of the classes name" do
+      assert_equal Moo::Bar.resolve("YukiTest::Moo::Bar"), Moo::Bar
+    end
+  end
+  
   context "a model's lifecyle operations" do
     should "provide callbacks" do
       
@@ -105,13 +127,7 @@ class YukiTest < Test::Unit::TestCase
   
   context "a model's serialized type" do
     should "default to the model's class name" do
-      module Foo
-        class Bar
-          include Yuki
-        end
-      end
-      
-      assert "YukiTest::Foo::Bar", Foo::Bar.new.to_h['type']  
+      assert "YukiTest::Moo::Bar", Moo::Bar.new.to_h['type']
     end
   end
 

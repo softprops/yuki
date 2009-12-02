@@ -155,15 +155,14 @@ module Yuki
       # or
       # "Bar"
       def resolve(cls_def)
-        if cls_def.kind_of? Hash
+        if cls_def.is_a? Hash
           class_key = cls_def.keys.first
           clazz = resolve(cls_def[class_key][:type])
-          resource = clazz.new(info[class_key]) if clazz 
         else
           clazz = begin
-            cls_def.split("::").inject(Object) { |obj, const| 
+            cls_def.to_s.split("::").inject(Object) { |obj, const| 
               obj.const_get(const) 
-            } unless cls_def.strip.empty?
+            } unless cls_def.to_s.strip.empty?
           rescue NameError => e
             puts "given #{cls_def} got #{e.inspect}"
             raise e
