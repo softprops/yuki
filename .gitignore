@@ -1,3 +1,4 @@
 .DS_Store
 pkg
 yuki.gemspec
+test/data/
