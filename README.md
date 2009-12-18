@@ -54,7 +54,7 @@ a model wrapper for key-value objects around tokyo products (cabinet/tyrant)
       end
 
       # hook for serialization
-      # (green ninjas get more mp with serialized)
+      # (green ninjas get more mp when serialized)
       def to_h
         if color == "green"
           super.to_h.merge({
