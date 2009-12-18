@@ -14,7 +14,9 @@ module Yuki
     def self.included(base)
       base.send :include, InstanceMethods
       base.class_eval { @store = nil }
-      base.instance_eval { alias __new__ new }
+      unless base.respond_to?(:__new__)
+        base.instance_eval { alias :__new__ :new } 
+      end
       base.extend ClassMethods
       base.extend Validations
       base.instance_eval { 
@@ -22,7 +24,7 @@ module Yuki
         has :pk
       }
     end
-   
+    
     module Callbacks
       def before_save(); end
       def after_save(); end
@@ -53,11 +55,16 @@ module Yuki
       # Redefines #new method in order to build the object
       # from a hash. Assumes a constructor that takes a hash or a
       # no-args constructor
-      def new(attrs = {})
-        begin
-          __new__(attrs).from_hash(attrs)
-        rescue
-          __new__.from_hash(attrs)
+      def new(*args)
+        if(args.first.is_a? Hash)
+          hash = args.first
+          begin
+            __new__(*args).from_hash(hash)
+          rescue Exception => e
+            __new__.from_hash(hash)
+          end
+        else
+          super
         end
       end
       
@@ -89,14 +96,15 @@ module Yuki
       # Gets an instance by key
       def get(key)
         val = db[key]
-        build(val)[0] if val && val[type_desc]
+        build(val)
       end
       
-      # Updates an instance by key the the given attrs hash
+      # Updates an instance by key the 
+      # the given attrs hash
       def put(key, attrs)
         db[key] = attrs
         val = db[key]
-        build(val)[0] if val && val[type_desc]
+        build(val)
       end
       
       # An object Type descriminator
@@ -140,13 +148,21 @@ module Yuki
       
       # Builds one or more instance's of the class from
       # a hash or array of hashes
-      def build(hashes)
-        [hashes].flatten.inject([]) do |list, hash|
-          type = hash[type_desc] || self.to_s.split('::').last
-          cls = resolve(type)
-          list << cls.new(hash) if cls
-          list
-        end if hashes
+      def build(hash_or_hashes)
+        if hash_or_hashes
+          if hash_or_hashes.is_a? Array
+            hash_or_hashes.flatten.inject([]) do |list, hash|
+              type = hash[type_desc] || self.to_s.split('::').last
+              cls = resolve(type)
+              list << cls.new(hash) if cls
+              list
+            end
+          else
+            type = hash_or_hashes[type_desc] || self.to_s.split('::').last
+            cls = resolve(type)
+            cls.new(hash_or_hashes) if cls
+          end
+        end
       end
       
       # Resolves a class given a string or hash
@@ -164,7 +180,6 @@ module Yuki
               obj.const_get(const) 
             } unless cls_def.to_s.strip.empty?
           rescue NameError => e
-            puts "given #{cls_def} got #{e.inspect}"
             raise e
           end
         end
@@ -271,7 +286,6 @@ module Yuki
       def from_hash(h)
         type = { self.class.type_desc => self.class.to_s }
         h.merge!(type) unless h.include? self.class.type_desc
-        
         h.each { |k, v|
           if attr_defined?(k)
             self[k.to_s] = v
@@ -290,7 +304,7 @@ module Yuki
       
       # specifies the object 'type' to serialize
       def type
-        self['type'] || self.class
+        self['type'] || self.class.to_s
       end
       
       protected
